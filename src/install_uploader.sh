@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+
+set -e
+
+THIS=$(realpath "$0")
+HERE=$(dirname "$THIS")
+ROOT=$(realpath "$HERE/..")
+
+source "$ROOT/conf/installer.env"
+
+sudo systemctl stop wingman-uploader.service || true
+
+# -----------------------------------------------------
+# Detect distro
+# -----------------------------------------------------
+
+if command -v apt-get >/dev/null 2>&1; then
+  DISTRO="debian"
+elif command -v pacman >/dev/null 2>&1; then
+  DISTRO="arch"
+else
+  echo "Unsupported distro. Requires Debian/Ubuntu or Arch-based." >&2
+  exit 1
+fi
+
+# -----------------------------------------------------
+# Install dependencies
+# -----------------------------------------------------
+
+echo "Installing dependencies..." >&2
+
+if [[ "$DISTRO" == "debian" ]]; then
+  sudo apt-get update
+  sudo apt-get install -y \
+    curl \
+    unzip \
+    inotify-tools \
+    dotnet-sdk-8.0 \
+    libicu*
+elif [[ "$DISTRO" == "arch" ]]; then
+  sudo pacman -S --noconfirm \
+    curl \
+    unzip \
+    inotify-tools \
+    icu \
+    dotnet-sdk
+fi
+
+# -----------------------------------------------------
+# Build Elite Insights CLI
+# -----------------------------------------------------
+
+echo "Building Elite Insights CLI..." >&2
+
+cd /tmp
+curl -L -o EI.zip https://github.com/baaron4/GW2-Elite-Insights-Parser/archive/refs/tags/v3.20.0.0.zip
+
+unzip -q EI.zip
+cd GW2-Elite-Insights-Parser-3.20.0.0/GW2EIParserCLI
+
+dotnet build -c Release --self-contained --runtime linux-x64 -o out
+
+sudo mkdir -p /opt/GW2EIParser
+sudo rm -rf /opt/GW2EIParser/*  # Delete any old files...
+sudo cp -r out/* /opt/GW2EIParser/
+
+# -----------------------------------------------------
+# Install uploader
+# -----------------------------------------------------
+
+echo "Installing wingman uploader..." >&2
+
+sudo mkdir -p /opt/scripts /etc/GW2EIParser
+
+sudo cp "$HERE/wingman_uploader.sh" /opt/scripts/
+sudo cp "$ROOT/conf/parser.conf" /etc/GW2EIParser/
+
+# -----------------------------------------------------
+# Systemd service
+# -----------------------------------------------------
+
+sudo tee /etc/systemd/system/wingman-uploader.service >/dev/null <<EOF
+[Unit]
+Description=GW2 Wingman Uploader
+StartLimitIntervalSec=300
+StartLimitBurst=5
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/scripts/wingman_uploader.sh
+Environment=ACCOUNT_NAME=$ACCOUNT_NAME
+Environment=ARCDPS_LOG_DIR=$ARCDPS_LOG_DIR
+Environment=WINGMAN_UPLOADED_DIR=$WINGMAN_UPLOADED_DIR
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+SERVICE_EXISTS=false
+if systemctl list-unit-files | grep -q '^wingman-uploader.service'; then
+  SERVICE_EXISTS=true
+fi
+
+sudo systemctl daemon-reload
+
+if $SERVICE_EXISTS; then
+  echo "Restarting existing service..." >&2
+  sudo systemctl restart wingman-uploader.service
+else
+  echo "Enabling and starting service for the first time..." >&2
+  sudo systemctl enable --now wingman-uploader.service
+fi

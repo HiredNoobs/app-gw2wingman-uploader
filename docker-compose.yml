@@ -5,8 +5,10 @@ services:
       dockerfile: Dockerfile
     container_name: wingman-uploader
     environment:
-      ACCOUNT_NAME: "${ACCOUNT_NAME}"
+      ACCOUNT_NAME: ${ACCOUNT_NAME}
+      ARCDPS_LOG_DIR: /var/lib/gw2logs/arcdps.cbtlogs
+      WINGMAN_UPLOADED_DIR: /var/lib/gw2logs/.wingmanUploaded
     volumes:
-      - "${HOST_ARCDPS_LOG_DIR}:/var/lib/gw2logs/arcdps.cbtlogs"
-      - "${HOST_WINGMAN_UPLOADED_DIR}:/var/lib/gw2logs/.wingmanUploaded"
+      - "${ARCDPS_LOG_DIR}:/var/lib/gw2logs/arcdps.cbtlogs"
+      - "${WINGMAN_UPLOADED_DIR}:/var/lib/gw2logs/.wingmanUploaded"
     restart: unless-stopped

@@ -2,10 +2,8 @@
 #
 # Wingman API docs: https://gw2wingman.nevermindcreations.de/api
 
-ARCDPS_LOG_DIR="/var/lib/gw2logs/arcdps.cbtlogs"
-
+ARCDPS_BASE=$(basename "$ARCDPS_LOG_DIR")
 WINGMAN_BASE="https://gw2wingman.nevermindcreations.de"
-WINGMAN_UPLOADED_DIR="/var/lib/gw2logs/.wingmanUploaded/arcdps.cbtlogs"
 
 # -----------------------------------------------------
 # Preflight checks
@@ -20,6 +18,8 @@ function check_env {
   if [ ! -d "$WINGMAN_UPLOADED_DIR" ]; then
     return 1
   fi
+
+  mkdir -p "$WINGMAN_UPLOADED_DIR/$ARCDPS_BASE"
 }
 
 function check_connection {
@@ -40,7 +40,7 @@ function check_connection {
 
 function process_file {
   local file relpath uploaded_mem
-  
+
   file="$1"
 
   case "$file" in
@@ -49,7 +49,7 @@ function process_file {
   esac
 
   relpath="${file#"$ARCDPS_LOG_DIR/"}"
-  uploaded_mem="$WINGMAN_UPLOADED_DIR/${relpath%.*}.mem"
+  uploaded_mem="$WINGMAN_UPLOADED_DIR/$ARCDPS_BASE/${relpath%.*}.mem"
 
   [[ -f "$uploaded_mem" ]] && return 0
 
@@ -68,7 +68,10 @@ function upload_file {
   filename=$(basename "$file")
   filesize=$(stat --printf="%s" "$file")
 
-  resp=$(curl -s -X POST "$WINGMAN_BASE/checkUpload" -H "Content-Type: application/x-www-form-urlencoded" --data "file=$filename&filesize=$filesize&account=$ACCOUNT_NAME")
+  resp=$(curl -s -X POST "$WINGMAN_BASE/checkUpload" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    --data "file=$filename&filesize=$filesize&account=$ACCOUNT_NAME")
+
   http_code="${resp: -3}"
   content="${resp::-3}"
 
@@ -87,19 +90,26 @@ function upload_file {
   return $?
 }
 
-# Go through all files in ARCDPS_LOG_DIR and upload those that don't
-# already have a WINGMAN_IGNORE/UPLOADED_DIR entry.
 function initial_upload {
-  local file
-
   echo "Checking for old files..." >&2
-  find "$ARCDPS_LOG_DIR" -type f \( -name "*.evtc" -o -name "*.evtc.zip" -o -name "*.zevtc" \) -print0 |
+
+  local file lastscan_file
+
+  lastscan_file="$WINGMAN_UPLOADED_DIR/.lastscan"
+
+  if [[ ! -f "$lastscan_file" ]]; then
+    echo "No previous scan timestamp found; scanning all logs." >&2
+    touch -d "1970-01-01" "$lastscan_file"
+  fi
+
+  find "$ARCDPS_LOG_DIR" -type f -newer "$lastscan_file" \( -name "*.evtc" -o -name "*.evtc.zip" -o -name "*.zevtc" \) -print0 |
   while IFS= read -r -d '' file; do
     process_file "$file"
   done
+
+  touch "$lastscan_file"
 }
 
-# Wait for new files in ARCDPS_LOG_DIR and upload them.
 function upload_new {
   local file
 
