@@ -30,13 +30,17 @@ fi
 echo "Installing dependencies..." >&2
 
 if [[ "$DISTRO" == "debian" ]]; then
+  wget https://packages.microsoft.com/config/debian/13/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+  sudo dpkg -i packages-microsoft-prod.deb
+  rm packages-microsoft-prod.deb
+
   sudo apt-get update
   sudo apt-get install -y \
     curl \
     unzip \
     inotify-tools \
     dotnet-sdk-8.0 \
-    libicu*
+    libicu72
 elif [[ "$DISTRO" == "arch" ]]; then
   sudo pacman -S --noconfirm \
     curl \
