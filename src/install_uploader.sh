@@ -59,7 +59,7 @@ echo "Building Elite Insights CLI..." >&2
 LATEST_TAG=$(curl -fsSL https://api.github.com/repos/baaron4/GW2-Elite-Insights-Parser/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
 
 cd /tmp
-curl -L -o EI.zip https://github.com/baaron4/GW2-Elite-Insights-Parser/archive/refs/tags/$LATEST_TAG.zip
+curl -L -o EI.zip "https://github.com/baaron4/GW2-Elite-Insights-Parser/archive/refs/tags/$LATEST_TAG.zip"
 
 unzip -q EI.zip
 cd GW2-Elite-Insights-Parser-3.20.0.0/GW2EIParserCLI

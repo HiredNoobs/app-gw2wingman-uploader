@@ -1,17 +1,25 @@
+ARG EI_VERSION=3.20.0.0
+ARG EI_TAG="v${EI_VERSION}"
+ARG EI_DIR="GW2-Elite-Insights-Parser-${EI_VERSION}"
+
 # -----------------------------------------------------
 # Build
 # -----------------------------------------------------
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-stage
 
+ARG EI_VERSION
+ARG EI_TAG
+ARG EI_DIR
+
 WORKDIR /build
 
 RUN apt-get update && apt-get install -y unzip
 
-ADD https://github.com/baaron4/GW2-Elite-Insights-Parser/archive/refs/tags/v3.20.0.0.zip /build/EI.zip
+ADD "https://github.com/baaron4/GW2-Elite-Insights-Parser/archive/refs/tags/${EI_TAG}.zip" /build/EI.zip
 RUN unzip EI.zip
 
-WORKDIR /build/GW2-Elite-Insights-Parser-3.20.0.0/GW2EIParserCLI
+WORKDIR /build/${EI_DIR}/GW2EIParserCLI
 RUN dotnet build -c Release --self-contained --runtime linux-x64 -o out
 
 # -----------------------------------------------------
@@ -20,9 +28,11 @@ RUN dotnet build -c Release --self-contained --runtime linux-x64 -o out
 
 FROM debian:bookworm-slim
 
+ARG EI_DIR
+
 RUN mkdir -p /opt/gw2-ei-parser /opt/scripts
 
-COPY --from=build-stage /build/GW2-Elite-Insights-Parser-3.20.0.0/GW2EIParserCLI/out /opt/gw2-ei-parser/
+COPY --from=build-stage /build/${EI_DIR}/GW2EIParserCLI/out /opt/gw2-ei-parser/
 
 COPY ./src/wingman_uploader.sh /opt/scripts/wingman_uploader.sh
 COPY ./conf/parser.conf /etc/gw2-ei-parser/parser.conf
