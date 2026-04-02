@@ -12,6 +12,23 @@ If a ``.mem`` file exists a log will be skipped without checking if it exists up
 
 ## Usage
 
+Install git, clone this repo, and cd into it:
+
+```bash
+# Debian based
+$ apt-get update
+$ apt-get install git
+
+# Arch based
+$ pacman -S git
+
+# Clone the repo
+$ git clone https://github.com/hirednoobs/app-gw2wingman-uploader.git
+$ cd app-gw2wingman-uploader
+```
+
+Now follow the steps in the section relevant to how you want to use the uploader.
+
 ### Docker
 
 Create a ``.env`` file at the top level of this repo (i.e. next to the docker-compose.yml file.) with the following vars:
@@ -28,7 +45,7 @@ ARCDPS_LOG_DIR="C:\\Users\\USERNAME\\Documents\\Guild Wars 2\\addons\\arcdps\\ar
 WINGMAN_UPLOADED_DIR="C:\\Users\\USERNAME\\Documents\\Guild Wars 2\\addons\\arcdps\\.wingmanUploaded"
 ```
 
-Then run ``docker-compose up -d``.
+Then run ``docker compose up -d``. Optionally, use ``docker compose up --build -d`` to force a re-build (if you've updated the Elite Insights version for example.)
 
 ### Linux
 
@@ -36,6 +53,6 @@ The script can be setup and run on an adhoc basis fairly easily, but for conveni
 
 Populate ``./conf/installer.env``.
 
-Use ``./src/install_uploader.sh`` to install/update on Debian or Arch based distros.
+To install/update use ``./src/install_uploader.sh`` for Debian or Arch based distros.
 
-Use ``./src/uninstall_uploader.sh`` to remove most of what is installed. Dependencies will be left alone to avoid breaking anything - check the install script for the list of installed packages if you want to clean them up.
+To uninstall use ``./src/uninstall_uploader.sh``. Dependencies will be left alone to avoid breaking anything - check the install script for the list of installed packages if you want to clean them up.
