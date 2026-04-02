@@ -83,7 +83,7 @@ function upload_file {
     return 1
   fi
 
-  /opt/GW2EIParser/GuildWars2EliteInsights-CLI -c "/etc/GW2EIParser/parser.conf" "$file"
+  /opt/gw2-ei-parser/GuildWars2EliteInsights-CLI -c "/etc/gw2-ei-parser/parser.conf" "$file"
 
   # Is it safe to assume GW2EI-CLI returns a sensible value?
   # If not will need to upload separately...

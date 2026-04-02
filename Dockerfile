@@ -15,20 +15,20 @@ WORKDIR /build/GW2-Elite-Insights-Parser-3.20.0.0/GW2EIParserCLI
 RUN dotnet build -c Release --self-contained --runtime linux-x64 -o out
 
 # -----------------------------------------------------
-# Main container
+# Main image
 # -----------------------------------------------------
 
 FROM debian:bookworm-slim
 
-RUN mkdir -p /opt/GW2EIParser /opt/scripts
+RUN mkdir -p /opt/gw2-ei-parser /opt/scripts
 
-COPY --from=build-stage /build/GW2-Elite-Insights-Parser-3.20.0.0/GW2EIParserCLI/out /opt/GW2EIParser/
+COPY --from=build-stage /build/GW2-Elite-Insights-Parser-3.20.0.0/GW2EIParserCLI/out /opt/gw2-ei-parser/
 
 COPY ./src/wingman_uploader.sh /opt/scripts/wingman_uploader.sh
-COPY ./conf/parser.conf /etc/GW2EIParser/parser.conf
+COPY ./conf/parser.conf /etc/gw2-ei-parser/parser.conf
 
-ENV XDG_CONFIG_HOME=/etc/GW2EIParser
-ENV XDG_DATA_HOME=/etc/GW2EIParser
+ENV XDG_CONFIG_HOME=/etc/gw2-ei-parser
+ENV XDG_DATA_HOME=/etc/gw2-ei-parser
 
 RUN apt-get update && apt-get install -y \
     curl \

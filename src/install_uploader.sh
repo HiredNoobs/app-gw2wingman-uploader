@@ -66,9 +66,9 @@ cd GW2-Elite-Insights-Parser-3.20.0.0/GW2EIParserCLI
 
 dotnet build -c Release --self-contained --runtime linux-x64 -o out
 
-sudo mkdir -p /opt/GW2EIParser
-sudo rm -rf /opt/GW2EIParser/*  # Delete any old files...
-sudo cp -r out/* /opt/GW2EIParser/
+sudo mkdir -p /opt/gw2-ei-parser
+sudo rm -rf /opt/gw2-ei-parser/*  # Delete any old files...
+sudo cp -r out/* /opt/gw2-ei-parser/
 
 # -----------------------------------------------------
 # Install uploader
@@ -76,10 +76,10 @@ sudo cp -r out/* /opt/GW2EIParser/
 
 echo "Installing wingman uploader..." >&2
 
-sudo mkdir -p /opt/scripts /etc/GW2EIParser
+sudo mkdir -p /opt/scripts /etc/gw2-ei-parser
 
 sudo cp "$HERE/wingman_uploader.sh" /opt/scripts/
-sudo cp "$ROOT/conf/parser.conf" /etc/GW2EIParser/
+sudo cp "$ROOT/conf/parser.conf" /etc/gw2-ei-parser/
 
 # -----------------------------------------------------
 # Systemd service

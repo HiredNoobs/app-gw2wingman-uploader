@@ -19,7 +19,7 @@ sudo systemctl daemon-reload
 
 echo "Removing Elite Insights parser and uploader..." >&2
 
-sudo rm -rf /opt/GW2EIParser 2>/dev/null || true
+sudo rm -rf /opt/gw2-ei-parser 2>/dev/null || true
 sudo rm -f /opt/scripts/wingman_uploader.sh 2>/dev/null || true
 
 if [ -d /opt/scripts ] && [ -z "$(ls -A /opt/scripts)" ]; then
@@ -27,11 +27,11 @@ if [ -d /opt/scripts ] && [ -z "$(ls -A /opt/scripts)" ]; then
   sudo rmdir /opt/scripts
 fi
 
-sudo rm -f /etc/GW2EIParser/parser.conf 2>/dev/null || true
+sudo rm -f /etc/gw2-ei-parser/parser.conf 2>/dev/null || true
 
-if [ -d /etc/GW2EIParser ] && [ -z "$(ls -A /etc/GW2EIParser)" ]; then
-  echo "/etc/GW2EIParser is empty, removing directory..." >&2
-  sudo rmdir /etc/GW2EIParser
+if [ -d /etc/gw2-ei-parser ] && [ -z "$(ls -A /etc/gw2-ei-parser)" ]; then
+  echo "/etc/gw2-ei-parser is empty, removing directory..." >&2
+  sudo rmdir /etc/gw2-ei-parser
 fi
 
 echo "Wingman uploader removed."
