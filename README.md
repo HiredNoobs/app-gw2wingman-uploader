@@ -1,5 +1,7 @@
 # app-gw2wingman-uploader
 
+As of 02/04/26 the official Wingman uploader now has a Linux version available on the beta version of the Wingman site.
+
 Uploader for arcdps logs to gw2wingman. Exists as an alternative uploader for Linux people.
 
 Designed to be "compatible" with the official Wingman Uploader. In so far that it uses the same directories and same ``.mem`` files to avoid re-uploads. This means you should be able to swap between the two, if you wanted to do that for some reason.
