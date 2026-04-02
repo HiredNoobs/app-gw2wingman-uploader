@@ -61,7 +61,7 @@ LATEST_TAG=$(curl -fsSL https://api.github.com/repos/baaron4/GW2-Elite-Insights-
 cd /tmp
 curl -L -o EI.zip "https://github.com/baaron4/GW2-Elite-Insights-Parser/archive/refs/tags/$LATEST_TAG.zip"
 
-unzip -q EI.zip
+unzip -o -q EI.zip
 cd GW2-Elite-Insights-Parser-3.20.0.0/GW2EIParserCLI
 
 dotnet build -c Release --self-contained --runtime linux-x64 -o out
