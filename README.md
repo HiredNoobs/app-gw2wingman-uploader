@@ -4,13 +4,9 @@ As of 02/04/26 the official Wingman uploader now has a Linux version available o
 
 Uploader for arcdps logs to gw2wingman. Exists as an alternative uploader for Linux people.
 
-Designed to be "compatible" with the official Wingman Uploader. In so far that it uses the same directories and same ``.mem`` files to avoid re-uploads. This means you should be able to swap between the two, if you wanted to do that for some reason.
+Designed to be "compatible" with the official Wingman Uploader. In so far that it uses the same directories and same ``.mem`` files to avoid re-uploads. This means you should be able to swap between the two, if you wanted to do that for some reason. One minor difference, when a log can't be parsed by Elite Insights this uploader will create a ``.err`` file instead of the ``.mem`` file; this will lead to the official uploader attempting to re-parse that log if you were switching between the two uploaders.
 
-The script does two things. The first, on start up, is checking all of the existing log files and uploading any that aren't already in wingman. The second is waiting for new files to appear in your log directory and uploading them immediately.
-
-Depending on the number of logs you keep locally, the first run can take a few minutes. Once it has run once it will generate a ``.lastscan`` file, which is used by future runs to avoid wasting time checking old files. If you need to force the checking of older files, the easiest way is to delete this file and re-run the script.
-
-If a ``.mem`` file exists a log will be skipped without checking if it exists upstream. If the ``.mem`` file for a log are deleted, the script will check if the log is already in Wingman and if not it will upload it.
+If a ``.mem``/``.err`` file exists a log will be skipped without checking if it exists upstream. If the ``.mem``/``.err`` file for a log is deleted, the script will check if the log is already in Wingman and if not it will upload it.
 
 ## Usage
 
@@ -39,8 +35,8 @@ Create a ``.env`` file at the top level of this repo (i.e. next to the docker-co
 ACCOUNT_NAME=YourGW2AccountName.1234
 
 # For Linux:
-ARCDPS_LOG_DIR=/path/on/host/arcdps.cbtlogs
-WINGMAN_UPLOADED_DIR=/path/on/host/.wingmanUploaded
+ARCDPS_LOG_DIR="~/.local/share/Guild Wars 2/addons/arcdps/arcdps.cbtlogs"
+WINGMAN_UPLOADED_DIR="~/.local/share/Guild Wars 2/addons/arcdps/.wingmanUploaded"
 
 # For Windows:
 ARCDPS_LOG_DIR="C:\\Users\\USERNAME\\Documents\\Guild Wars 2\\addons\\arcdps\\arcdps.cbtlogs"
@@ -58,3 +54,25 @@ Populate ``./conf/installer.env``.
 To install/update use ``./src/install_uploader.sh`` for Debian or Arch based distros.
 
 To uninstall use ``./src/uninstall_uploader.sh``. Dependencies will be left alone to avoid breaking anything - check the install script for the list of installed packages if you want to clean them up.
+
+## Configuration
+
+The uploader is configured by environment variables. Default options for the available env vars are set in both the ``docker-compose.yml`` file and the ``conf/installer.env`` file (for Docker and Linux usage respectively.) If you're running the script on an adhoc basis, I would recommend creating an ``.env`` file and sourcing it before running the script (you could also do this with the ``conf/installer.env`` file.)
+
+### Environment variables
+
+#### Uploader config
+
+``ACCOUNT_NAME``: Your GW2 account name. This must be set, you're uploads may fail if this is incorrectly set.
+
+``ARCDPS_LOG_DIR``: The arcdps log directory.
+
+``WINGMAN_UPLOADED_DIR``: Directory to store .mem files. This can be anywhere you want but the official uploader uses ``.wingmanUploaded`` next to the executable (IIRC.)
+
+``IGNORE_OLD_LOGS``: Skip processing "older" logs on successive startups. After the very first run a file will be created in ``WINGMAN_UPLOADED_DIR`` to track the end of the last run, any files older than this file will be ignored on future runs. If enabled some logs could end up not getting uploaded. Recommended to keep as "false" but if you keep a lot of logs you might find some benefit in setting to "true".
+
+#### Installer script config
+
+``CREATE_SYSTEMD_SERVICE``: If set to "false" the Systemd service won't be created at all. You will need to run the script yourself in whatever way you wish. One example for this: ``nohup /opt/scripts/wingman_uploader.sh &``.
+
+``WINGMAN_SERVICE_ENABLED``: If enabled the Systemd service will be automatically enabled, this will make the service start automatically with your machine. If disabled, you will need to start/stop the service manually when required. This can be done with ``systemctl start/stop wingman-uploader``.

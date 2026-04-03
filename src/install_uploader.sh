@@ -8,7 +8,7 @@ ROOT=$(realpath "$HERE/..")
 
 source "$ROOT/conf/installer.env"
 
-sudo systemctl stop wingman-uploader.service || true
+sudo systemctl stop wingman-uploader.service >/dev/null 2>&1 || true
 
 # -----------------------------------------------------
 # Detect distro
@@ -85,6 +85,11 @@ sudo cp "$ROOT/conf/parser.conf" /etc/gw2-ei-parser/
 # Systemd service
 # -----------------------------------------------------
 
+if [[ "${CREATE_SYSTEMD_SERVICE:-}" == "false" ]]; then
+  echo "Skipping creation of Systemd service." >&2
+  return 0
+fi
+
 sudo tee /etc/systemd/system/wingman-uploader.service >/dev/null <<EOF
 [Unit]
 Description=GW2 Wingman Uploader
@@ -99,6 +104,7 @@ ExecStart=/opt/scripts/wingman_uploader.sh
 Environment=ACCOUNT_NAME=$ACCOUNT_NAME
 Environment=ARCDPS_LOG_DIR=$ARCDPS_LOG_DIR
 Environment=WINGMAN_UPLOADED_DIR=$WINGMAN_UPLOADED_DIR
+Environment=IGNORE_OLD_LOGS=$IGNORE_OLD_LOGS
 Restart=always
 RestartSec=5
 
@@ -117,6 +123,10 @@ if $SERVICE_EXISTS; then
   echo "Restarting existing service..." >&2
   sudo systemctl restart wingman-uploader.service
 else
-  echo "Enabling and starting service for the first time..." >&2
-  sudo systemctl enable --now wingman-uploader.service
+  if [ "${WINGMAN_SERVICE_ENABLED:-}" == "true" ]; then
+    echo "Enabling and starting service for the first time..." >&2
+    sudo systemctl enable --now wingman-uploader.service
+  else
+    echo "Uploader not enabled by default. Uploader service ready to start." >&2
+  fi
 fi
