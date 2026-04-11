@@ -71,6 +71,10 @@ The uploader is configured by environment variables. Default options for the ava
 
 ``IGNORE_OLD_LOGS``: Skip processing "older" logs on successive startups. After the very first run a file will be created in ``WINGMAN_UPLOADED_DIR`` to track the end of the last run, any files older than this file will be ignored on future runs. If enabled some logs could end up not getting uploaded. Recommended to keep as "false" but if you keep a lot of logs you might find some benefit in setting to "true".
 
+``RETRY_FAILED_UPLOADS``: Creates a background process that will attempt to re-parse & uplaod logs that failed to be uploaded. If disabled, the script will only retry when it's next started. Recommended to leave enabled unless you know that the Wingman API isn't working correctly.
+
+``RETRY_FREQUENCY``: If ``RETRY_FAILED_UPLOADS`` is true, this is the frequency at which ``.retry`` files will be checked for in seconds.
+
 #### Installer script config
 
 ``CREATE_SYSTEMD_SERVICE``: If set to "false" the Systemd service won't be created at all. You will need to run the script yourself in whatever way you wish. One example for this: ``nohup /opt/scripts/wingman_uploader.sh &``.

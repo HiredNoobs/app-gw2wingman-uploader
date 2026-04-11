@@ -53,7 +53,7 @@ function check_upload {
   filename=$(basename "$file")
   filesize=$(stat --printf="%s" "$file")
 
-  resp=$(curl -s -X POST "$WINGMAN_BASE/checkUpload" \
+  resp=$(curl -s -X POST -w "%{http_code}" "$WINGMAN_BASE/checkUpload" \
     -H "Content-Type: application/x-www-form-urlencoded" \
     --data "file=$filename&filesize=$filesize&account=$ACCOUNT_NAME")
 
@@ -72,7 +72,7 @@ function check_upload {
 }
 
 # -----------------------------------------------------
-# File handlers
+# Parsing and uploading
 # -----------------------------------------------------
 
 function process_file {
@@ -88,20 +88,30 @@ function process_file {
   relpath="${file#"$ARCDPS_LOG_DIR/"}"
   uploaded_mem="$WINGMAN_UPLOADED_DIR/$ARCDPS_BASE/${relpath%.*}"
 
-  [[ -f "$uploaded_mem.mem" ]] && return 0
+  [[ -f "$uploaded_mem.mem" || -f "$uploaded_mem.err" ]] && return 0
 
   echo "Uploading: $file" >&2
   if upload_file "$file"; then
     echo "File successfully uploaded." >&2
+
     mkdir -p "$(dirname "$uploaded_mem")"
     touch "$uploaded_mem.mem"
+    rm -f "$uploaded_mem.retry"
 
     return 0
   else
     status=$?
     if [[ $status == 1 ]]; then
+      echo "Failed to parse $file." >&2
+
       mkdir -p "$(dirname "$uploaded_mem")"
       touch "$uploaded_mem.err"
+      rm -f "$uploaded_mem.retry"
+    elif [[ $status == 2 ]]; then
+      echo "Failed to upload $file."
+
+      mkdir -p "$(dirname "$uploaded_mem")"
+      touch "$uploaded_mem.retry"
     fi
     return $status
   fi
@@ -124,11 +134,7 @@ function upload_file {
   fi
 
   parser_out=$(/opt/gw2-ei-parser/GuildWars2EliteInsights-CLI -c "/etc/gw2-ei-parser/parser.conf" "$log_file")
-
-  if [[ "$parser_out" =~ ^Parsing[[:space:]]+Failure ]]; then
-    echo "EI failed to parse $log_file" >&2
-    return 1
-  fi
+  [[ "$parser_out" =~ ^Parsing[[:space:]]+Failure ]] && return 1
 
   check_upload "$log_file"
   status=$?
@@ -137,8 +143,12 @@ function upload_file {
   return $status
 }
 
+# -----------------------------------------------------
+# File handlers
+# -----------------------------------------------------
+
 function initial_upload {
-  echo "Checking for old files..." >&2
+  echo "Checking for old logs." >&2
 
   local file lastscan_file status
 
@@ -176,10 +186,44 @@ function initial_upload {
   return 0
 }
 
+function retry_uploads {
+  local retry_file log_file status base relpath freq
+
+  freq="${RETRY_FREQUENCY:-60}"
+
+  echo "Starting retry loop." >&2
+  while true; do
+    find "$WINGMAN_UPLOADED_DIR/$ARCDPS_BASE" -type f -name "*.retry" -mmin +5 | while read -r retry_file; do
+      base="${retry_file%.retry}"
+      relpath="${base#"$WINGMAN_UPLOADED_DIR/$ARCDPS_BASE/"}"
+      log_file="$ARCDPS_LOG_DIR/$relpath"
+
+      if [[ -f "$log_file.evtc" ]]; then
+        log_file="$log_file.evtc"
+      elif [[ -f "$log_file.evtc.zip" ]]; then
+        log_file="$log_file.evtc.zip"
+      elif [[ -f "$log_file.zevtc" ]]; then
+        log_file="$log_file.zevtc"
+      else
+        echo "Couldn't find original file for $retry_file." >&2
+        rm -f "$retry_file"
+        continue
+      fi
+
+      echo "Retrying upload of $log_file." >&2
+      if process_file "$log_file"; then
+        rm -f "$retry_file"
+        touch "$base.mem"
+      fi
+    done
+    sleep "$freq"
+  done
+}
+
 function upload_new {
   local file status
 
-  echo "Waiting for new files..." >&2
+  echo "Starting main loop." >&2
   inotifywait -m -r -e create,moved_to,close_write --format '%w%f' "$ARCDPS_LOG_DIR" |
   while read -r file; do
     process_file "$file"
@@ -197,4 +241,15 @@ function upload_new {
 if ! check_env; then exit $?; fi
 if ! check_connection; then exit $?; fi
 if ! initial_upload; then exit $?; fi
-if ! upload_new; then exit $?; fi
+
+if [[ "$RETRY_FAILED_UPLOADS" == "true" ]]; then
+  retry_uploads &
+  RETRY_PID=$!
+  if ! upload_new; then
+    STATUS=$?
+    kill "$RETRY_PID"
+    exit $STATUS
+  fi
+else
+  if ! upload_new; then exit $?; fi
+fi

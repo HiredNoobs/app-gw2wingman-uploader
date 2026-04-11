@@ -9,6 +9,8 @@ services:
       ARCDPS_LOG_DIR: /var/lib/gw2logs/arcdps.cbtlogs
       WINGMAN_UPLOADED_DIR: /var/lib/gw2logs/.wingmanUploaded
       IGNORE_OLD_LOGS: false
+      RETRY_FAILED_UPLOADS: true
+      RETRY_FREQUENCY: 60
     volumes:
       - "${ARCDPS_LOG_DIR}:/var/lib/gw2logs/arcdps.cbtlogs"
       - "${WINGMAN_UPLOADED_DIR}:/var/lib/gw2logs/.wingmanUploaded"
