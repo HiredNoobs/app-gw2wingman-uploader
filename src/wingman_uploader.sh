@@ -123,7 +123,7 @@ function process_file {
 #   2: Failed to upload log
 #   10: Wingman not accepting logs
 function upload_file {
-  local log_file resp status parser_out
+  local log_file resp status parser_out json parsed failed refused
   
   log_file="$1"
 
@@ -133,14 +133,28 @@ function upload_file {
     return $status
   fi
 
-  parser_out=$(/opt/gw2-ei-parser/GuildWars2EliteInsights-CLI -c "/etc/gw2-ei-parser/parser.conf" "$log_file")
-  [[ "$parser_out" =~ ^Parsing[[:space:]]+Failure ]] && return 1
+  parser_out=$(/opt/gw2-ei-parser/GuildWars2EliteInsights-CLI -c "/etc/gw2-ei-parser/parser.conf" "$log_file" 2>/dev/null)
+  json=$(printf '%s\n' "$parser_out" | grep -o '{[^}]*}')
+  echo "Parser output: $json" >&2
 
-  check_upload "$log_file"
-  status=$?
-  [[ $status == 0 ]] && return 2
-  [[ $status == 1 ]] && return 0
-  return $status
+  parsed=$(printf '%s' "$json" | jq -r '.parsed')
+  [[ "$parsed" == "false" ]] && return 1
+
+  failed=$(printf '%s' "$json" | jq -r '.wingmanUploadFailed')
+  [[ "$failed" == "true" ]] && return 2
+
+  # "Refused" from EI can mean a number of different things,
+  # hence re-checking here...
+  refused=$(printf '%s' "$json" | jq -r '.wingmanUploadRefused')
+  if [[ "$refused" == "true" ]]; then
+    check_upload "$log_file"
+    status=$?
+    [[ $status == 0 ]] && return 2
+    [[ $status == 1 ]] && return 0
+    return $status
+  fi
+
+  return 0
 }
 
 # -----------------------------------------------------

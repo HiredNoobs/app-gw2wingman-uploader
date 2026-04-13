@@ -1,4 +1,4 @@
-ARG EI_VERSION=3.20.0.0
+ARG EI_VERSION=3.21.0.0
 ARG EI_TAG="v${EI_VERSION}"
 ARG EI_DIR="GW2-Elite-Insights-Parser-${EI_VERSION}"
 
@@ -42,6 +42,7 @@ ENV XDG_DATA_HOME=/etc/gw2-ei-parser
 
 RUN apt-get update && apt-get install -y \
     curl \
+    jq \
     inotify-tools \
     unzip \
     libicu72 \
