@@ -4,7 +4,7 @@ As of 02/04/26 the official Wingman uploader now has a Linux version available o
 
 Uploader for arcdps logs to gw2wingman. Exists as an alternative uploader for Linux people.
 
-Designed to be "compatible" with the official Wingman Uploader. In so far that it uses the same directories and same ``.mem`` files to avoid re-uploads. This means you should be able to swap between the two, if you wanted to do that for some reason. One minor difference, when a log can't be parsed by Elite Insights this uploader will create a ``.err`` file instead of the ``.mem`` file; this will lead to the official uploader attempting to re-parse that log if you were switching between the two uploaders.
+Designed to be "compatible" with the official Wingman Uploader. In so far that it uses the same directories and same ``.mem`` files to avoid re-uploads. This means you should be able to swap between the two, if you wanted to do that for some reason. One minor difference, when a log can't be parsed by Elite Insights this uploader will create a ``.err`` file instead of the ``.mem`` file; this will lead to the official uploader attempting to re-parse that log if you were switching between the two uploaders. If a log fails to upload repeatedly it will also have a ``.err`` file created for it.
 
 If a ``.mem``/``.err`` file exists a log will be skipped without checking if it exists upstream. If the ``.mem``/``.err`` file for a log is deleted, the script will check if the log is already in Wingman and if not it will upload it.
 
@@ -74,6 +74,8 @@ The uploader is configured by environment variables. Default options for the ava
 ``RETRY_FAILED_UPLOADS``: Creates a background process that will attempt to re-parse & uplaod logs that failed to be uploaded. If disabled, the script will only retry when it's next started. Recommended to leave enabled unless you know that the Wingman API isn't working correctly.
 
 ``RETRY_FREQUENCY``: If ``RETRY_FAILED_UPLOADS`` is true, this is the frequency at which ``.retry`` files will be checked for in seconds.
+
+``MAX_RETRIES``: Maximum number of times to retry an upload. Some logs will repeatedly fail (or Wingman may claim they failed when they actually succeeded) this will prevent the uploader from retrying them repeatedly. Set to ``-1`` for infinite.
 
 #### Installer script config
 

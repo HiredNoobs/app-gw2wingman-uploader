@@ -76,7 +76,7 @@ function check_upload {
 # -----------------------------------------------------
 
 function process_file {
-  local file relpath uploaded_mem status
+  local file relpath uploaded_mem status retry_count
 
   file="$1"
 
@@ -105,14 +105,32 @@ function process_file {
       echo "Failed to parse $file." >&2
 
       mkdir -p "$(dirname "$uploaded_mem")"
-      touch "$uploaded_mem.err"
+      echo "Failed to parse file" > "$uploaded_mem.err"
       rm -f "$uploaded_mem.retry"
     elif [[ $status == 2 ]]; then
       echo "Failed to upload $file."
 
       mkdir -p "$(dirname "$uploaded_mem")"
-      touch "$uploaded_mem.retry"
+
+      if [[ -f "$uploaded_mem.retry" ]]; then
+        retry_count=$(cat "$uploaded_mem.retry")
+        [[ "$retry_count" =~ ^[0-9]+$ ]] || retry_count=0
+      else
+        retry_count=0
+      fi
+
+      retry_count=$((retry_count + 1))
+
+      if (( retry_count > MAX_RETRIES )); then
+        rm -f "$uploaded_mem.retry"
+        echo "Failed to upload file" > "$uploaded_mem.err"
+      else
+        echo "$retry_count" > "$uploaded_mem.retry"
+      fi
+
+      return $status
     fi
+
     return $status
   fi
 }
